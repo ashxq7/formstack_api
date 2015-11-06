@@ -1,67 +1,107 @@
 <?php
 
+session_start();
+
 $ch = curl_init();
+$form_id = $_POST['form_id'];
+$oauth = $_POST['oauth_token'];
 
-curl_setopt($ch, CURLOPT_URL, "https://www.formstack.com/api/v2/form.json?oauth_token=797de37033311cd284efdd9ac7ff8aca");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-$get_all_result = curl_exec($ch);
+if (isset($_POST['get_all']))
+{
+        $url = "https://www.formstack.com/api/v2/form.json";
+        $query = "?oauth_token=$oauth";
+        curl_setopt($ch, CURLOPT_URL, $url.$query);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        $result = curl_exec($ch);
+        $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+}
 
-$get_all_result = json_decode($get_all_result, TRUE);
-$form_id = $get_all_result['forms'][0]['id'];
+if (isset($_POST['get_one']))
+{
+        $url = "https://www.formstack.com/api/v2/form/$form_id.json";
+        $query = "?oauth_token=$oauth";
+        curl_setopt($ch, CURLOPT_URL, $url.$query);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        $result = curl_exec($ch);
+        $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+}
 
-curl_setopt($ch, CURLOPT_URL, "https://www.formstack.com/api/v2/form/$form_id.json?oauth_token=797de37033311cd284efdd9ac7ff8aca");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-$get_one_result = curl_exec($ch);
+if (isset($_POST['copy']))
+{
+        $url = "https://www.formstack.com/api/v2/form/$form_id/copy.json";
+        $query = "?oauth_token=$oauth";
+        curl_setopt($ch, CURLOPT_URL, $url.$query);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_POST, TRUE);
+        $result = curl_exec($ch);
+        $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+}
 
-$get_one_result = json_decode($get_one_result, TRUE);
+if (isset($_POST['delete']))
+{
+        $url = "https://www.formstack.com/api/v2/form/$form_id.json";
+        $query = "?oauth_token=$oauth";
+        curl_setopt($ch, CURLOPT_URL, $url.$query);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+        curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
+        $result = curl_exec($ch);
+        $response = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+}
 
-curl_setopt($ch, CURLOPT_URL, "https://www.formstack.com/api/v2/form/$form_id/copy.json?oauth_token=797de37033311cd284efdd9ac7ff8aca");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-curl_setopt($ch, CURLOPT_POST, TRUE);
-$copy_result = curl_exec($ch);
-
-$copy_result = json_decode($copy_result, TRUE);
-$copy_id = $copy_result['id'];
-
-curl_setopt($ch, CURLOPT_URL, "https://www.formstack.com/api/v2/form/$copy_id.json?oauth_token=797de37033311cd284efdd9ac7ff8aca");
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
-curl_setopt($ch, CURLOPT_CUSTOMREQUEST, "DELETE");
-$delete_result = curl_exec($ch);
-
-$delete_result = json_decode($delete_result, TRUE);
-
-var_dump($get_all_result);
-var_dump($get_one_result);
-var_dump($copy_result);
-var_dump($delete_result);
+curl_close($ch);
 
 ?>
 
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html>
 <head>
 <title>Formstack API Test</title>
 </head>
 
 <body>
+        <h2> Formstack API Test </h2>
         <div id="content">
                 <form method=post>
                         <fieldset style="border:0; padding:0;">
-                                <input type="text" id="epic" name="epic" value="Get All Forms" onfocus="if(this.value=='Enter Epic Ticket')this.value='';"  onblur="if(this.value=='')this.value='Enter Epic Ticket';" />
-                                <input type="submit" id='submit' name='submit' value="Get All Forms" class='myButton' />
+                        <br>
+                                Enter oauth token: <input type="text" id="oauth_token" name="oauth_token" value="OAUTH Token"/>
+                        </fieldset>
+                        <hr>
+                        <br>
+                        <fieldset style="border:0; padding:0;">
+                                <input type="submit" id='get_all' name='get_all' value="Get All Forms" class='myButton' />
+                        </fieldset>
+                        <br>
+                        <p> OR </p>
+                        <br>
+                        <fieldset style="border:0; padding:0;">
+                                Enter form id: <input type="text" id="form_id" name="form_id" value="Form ID"/>
+                                <br>
+                                <input type="submit" id='get_one' name='get_one' value="Get Form" class='myButton' />
+                                <input type="submit" id='copy' name='copy' value="Copy Form" class='myButton' />
+                                <input type="submit" id='delete' name='delete' value="Delete Form" class='myButton' />
                         </fieldset>
                 </form>
 
-                <div>
-                <? if (!empty($_SESSION['created_epic_cabs']))
-                {
-                        foreach($_SESSION['created_epic_cabs'] as $cab_number)
+                <?php
+                        if (isset($response))
                         {
-                ?>      <a href="http://<?=$jira_calls->get_host();?>/browse/<? echo $cab_number ?>" ><?=$cab_number?></a>
-                <?
+                                if ($response == 200)
+                                {
+                                        print "Request worked!<br>";
+                                        print "URL was: $url<br>";
+                                        print "Query string was: $query<br>";
+                                        print "Reponse code was: $response<br>";
+                                        print "JSON was: $result<br>";
+                                }
+                                else
+                                {
+                                        print "Something went wrong.<br>";
+                                        print "URL was: $url<br>";
+                                        print "Query string was: $query<br>";
+                                        print "Reponse code was: $response<br>";
+                                }
                         }
-                }
-                ?></div>
-         </div><!--END content -->
+                ?>
+        </div>
 </body>
 </html>
-
